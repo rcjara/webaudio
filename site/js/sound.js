@@ -12,6 +12,7 @@ if (typeof AudioContext !== "undefined") {
 
 var sound = (function() {
   var sources        = {},
+      volumes        = {},
       sounds_loaded  = 0,
       sounds_to_load = 0,
       done_loading   = function() {};
@@ -34,12 +35,17 @@ var sound = (function() {
     loadSound('hello', 'http://thelab.thingsinjars.com/web-audio-tutorial/hello.mp3');
 
     done_loading = function() {
-      play('hello');
-      play('beep');
+      play('hello', 0.3);
+      play('beep', 0.6);
     }
   };
 
-  var play = function(ident) {
+
+
+  var play = function(ident, volume) {
+    if (volume !== undefined) {
+      volumes[ident].gain = volume;
+    }
     sources[ident].noteOn(audioCtx.currentTime);
   }
 
@@ -54,9 +60,14 @@ var sound = (function() {
           source    = audioCtx.createBufferSource();
           buffer    = audioCtx.createBuffer(audioData, true/*make mono*/);
       source.buffer = buffer;
-      source.connect(audioCtx.destination);
       sources[ident] = source;
 
+      volumeNode = audioCtx.createGainNode();
+      volumeNode.gain.value = 0.1;
+      volumes[ident] = volumeNode;
+
+      source.connect(volumeNode);
+      volumeNode.connect(audioCtx.destination);
       sounds_loaded++;
 
       echo('ident: ' + ident + 'sounds_loaded: ' + sounds_loaded);
@@ -92,6 +103,7 @@ var sound = (function() {
   return {
     echo_test: echo_test,
     sound_test: sound_test,
-    multi_sound_test: multi_sound_test
+    multi_sound_test: multi_sound_test,
+    sources: sources
   }
 })();
