@@ -11,6 +11,11 @@ if (typeof AudioContext !== "undefined") {
 }
 
 var sound = (function() {
+  var sources        = {},
+      sounds_loaded  = 0,
+      sounds_to_load = 0,
+      done_loading   = function() {};
+
   var echo = function(text) {
     $('body').append($('<p>' + text + '</p>'));
   };
@@ -22,15 +27,46 @@ var sound = (function() {
     }
   };
 
-  var str2ab = function(str) {
-    var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
-    var bufView = new Uint16Array(buf);
-    for (var i = 0, strLen = str.length; i < strLen; i++) {
-      bufView[i] = str.charCodeAt(i);
+  var multi_sound_test = function() {
+    echo('starting multi_sound_test');
+
+    loadSound('beep', 'audio/beep-1.mp3');
+    loadSound('hello', 'http://thelab.thingsinjars.com/web-audio-tutorial/hello.mp3');
+
+    done_loading = function() {
+      play('hello');
+      play('beep');
     }
-    return buf;
+  };
+
+  var play = function(ident) {
+    sources[ident].noteOn(audioCtx.currentTime);
   }
-  var request = new XMLHttpRequest();
+
+  var loadSound = function(ident, url) {
+    echo('starting loadSound');
+    sounds_to_load++;
+    var request = new XMLHttpRequest();
+    request.open("GET", url, true);
+    request.responseType = 'arraybuffer';
+    request.onload = function() {
+      var audioData = request.response,
+          source    = audioCtx.createBufferSource();
+          buffer    = audioCtx.createBuffer(audioData, true/*make mono*/);
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      sources[ident] = source;
+
+      sounds_loaded++;
+
+      echo('ident: ' + ident + 'sounds_loaded: ' + sounds_loaded);
+      if (sounds_loaded >= sounds_to_load) {
+        done_loading();
+      }
+    }
+
+    request.send();
+  };
 
   var sound_test = function() {
     console.log('starting sound test');
@@ -55,6 +91,7 @@ var sound = (function() {
 
   return {
     echo_test: echo_test,
-    sound_test: sound_test
+    sound_test: sound_test,
+    multi_sound_test: multi_sound_test
   }
 })();
