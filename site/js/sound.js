@@ -31,16 +31,18 @@ var sound = (function() {
   var multi_sound_test = function() {
     echo('starting multi_sound_test');
 
-    loadSound('beep', 'audio/beep-1.mp3');
-    loadSound('hello', 'http://thelab.thingsinjars.com/web-audio-tutorial/hello.mp3');
+    load_sound('beep', 'audio/beep-1.mp3');
+    load_sound('hello', 'http://thelab.thingsinjars.com/web-audio-tutorial/hello.mp3');
 
     done_loading = function() {
-      play('hello', 0.3);
+      play('hello');
       play('beep', 0.6);
-    }
+
+      var currTime = audioCtx.currentTime;
+      volumes['hello'].gain.linearRampToValueAtTime(0, currTime);
+      volumes['hello'].gain.linearRampToValueAtTime(1, currTime + 10.1);
+    };
   };
-
-
 
   var play = function(ident, volume) {
     if (volume !== undefined) {
@@ -49,8 +51,8 @@ var sound = (function() {
     sources[ident].noteOn(audioCtx.currentTime);
   }
 
-  var loadSound = function(ident, url) {
-    echo('starting loadSound');
+  var load_sound = function(ident, url) {
+    echo('starting load_sound');
     sounds_to_load++;
     var request = new XMLHttpRequest();
     request.open("GET", url, true);
@@ -74,10 +76,17 @@ var sound = (function() {
       if (sounds_loaded >= sounds_to_load) {
         done_loading();
       }
-    }
+    };
 
     request.send();
   };
+
+  var make_oscillator = function(ident) {
+    var source = audioCtx.createOscillator();
+    source.frequency.value = 400;
+
+
+  }
 
   var sound_test = function() {
     console.log('starting sound test');
@@ -98,12 +107,27 @@ var sound = (function() {
     };
 
     request.send();
+
+  };
+
+  var start_key_test = function() {
+    load_sound('c', 'audio/piano_middle_C.mp3');
+    done_loading = function() {
+      sources['c'].loop = true;
+    }
+    $('body').keydown(function(e) {
+      console.log('keydown');
+      if (e.which === 70) {
+        sources['c'].noteOn(0);
+      }
+    });
   };
 
   return {
     echo_test: echo_test,
     sound_test: sound_test,
     multi_sound_test: multi_sound_test,
+    start_key_test: start_key_test,
     sources: sources
-  }
+  };
 })();
